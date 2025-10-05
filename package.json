@@ -2,9 +2,11 @@
   "name": "react-native-ocm-adnetwork-module",
   "version": "0.1.0",
   "description": "This example demonstrates the `react-native-ocm-ad-network-module` in a simpleReact Native application. On launch the OCM SDK is initialized, a banner ad ismounted in the view hierarchy, and buttons are provided to load and showinterstitial and rewarded ads. Events emitted by the SDK are displayed onscreen for easy debugging.",
-  "main": "./lib/module/index.js",
+  "main": "lib/commonjs/index.js",
   "types": "./lib/typescript/src/index.d.ts",
+  "module": "lib/module/index.js",
   "source": "./src/index.tsx",
+  "react-native": "src/index.ts",
   "exports": {
     ".": {
       "source": "./src/index.tsx",

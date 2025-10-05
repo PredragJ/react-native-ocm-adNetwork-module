@@ -27,10 +27,10 @@
 // export { OcmAdView };
 // export type { OcmAdViewProps };
 
-export { OcmAdView } from './components/OcmAdViewNativeComponent';
+export { default as OcmAdView } from './components/OcmAdViewNativeComponent';
 export type { OcmAdViewProps } from './components/OcmAdViewNativeComponent';
 
-// TurboModule / NativeModule API
+// Turbo/Native API
 import OcmNative from './NativeOcmAdnetworkModule';
 
 export function initialize(publisherId: string) {
@@ -54,7 +54,6 @@ export function showRewarded() {
   return OcmNative.showRewarded();
 }
 
-// helpers
 export type JSONValue =
   | string
   | number

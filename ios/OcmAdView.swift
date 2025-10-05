@@ -2,11 +2,17 @@ import UIKit
 import React
 import OCMAdNetworkIOS
 
-@objc(OcmAdView)
+@objcMembers
 class OcmAdView: UIView, OcmBannerViewDelegate {
 
-  @objc var adUnitId: NSString = "" { didSet { reloadIfReady() } }
-  @objc var onAdEvent: RCTDirectEventBlock?
+  // ✅ ObjC-visible, dynamic, NE-opcione (imaju default vrednosti)
+  dynamic var adUnitId: NSString = ""        { didSet { reloadIfReady() } }
+  dynamic var format:   NSString = "banner"  { didSet { /* optional */ } }
+  dynamic var refreshInterval: NSNumber?     { didSet { /* optional */ } }
+
+  var loaderNative: OcmNativeAdLoader?
+  // ako koristiš event iz JS-a:
+  dynamic var onAdEvent: RCTDirectEventBlock?
 
   private var bannerView: OcmBannerView?
 
@@ -21,20 +27,34 @@ class OcmAdView: UIView, OcmBannerViewDelegate {
   }
 
   private func reloadIfReady() {
-    guard adUnitId.length > 0 else { return }
+    guard adUnitId.length > 0 else { return } // ✅ sada je NSString, pa .length radi
 
-    // remove old
     bannerView?.removeFromSuperview()
     bannerView = nil
 
-    // create banner
-    let view = OcmBannerView(frame: bounds)
-    view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    addSubview(view)
-    bannerView = view
+    let v = OcmBannerView(frame: bounds)
+    v.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    addSubview(v)
+    bannerView = v
+    
+    Task {
+        do {
+            try await OcmAdNetworkSDK.initialize(publisherId: "test_pub_001")
+            print("✅ SDK initialized")
+            
+        } catch {
+            print("❌ SDK init failed: \(error.localizedDescription)")
+            
+        }
+    }
 
-    // IMPORTANT: delegate ide kroz load(...)
-    view.load(adUnitId: adUnitId as String, delegate: self)
+    // ✅ Bridging NSString -> String (bez ?)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak self] in
+            guard let self = self else { return }
+            print("🕑 Delayed load for adUnitId =", self.adUnitId)
+            v.load(adUnitId: self.adUnitId as String, delegate: self)
+        }
+//    v.load(adUnitId: adUnitId as String, delegate: self)
   }
 
   override func layoutSubviews() {
@@ -43,20 +63,8 @@ class OcmAdView: UIView, OcmBannerViewDelegate {
   }
 
   // MARK: - OcmBannerViewDelegate
-
-  func onAdLoaded() {
-    onAdEvent?(["type": "loaded"])
-  }
-
-  func onAdFailed(_ error: Error) {
-    onAdEvent?(["type": "failed", "error": error.localizedDescription])
-  }
-
-  func onAdClicked() {
-    onAdEvent?(["type": "clicked"])
-  }
-
-  func onImpression() {
-    onAdEvent?(["type": "impression"])
-  }
+  func onAdLoaded()            { onAdEvent?(["type": "loaded"]) }
+  func onAdFailed(_ error: Error) { onAdEvent?(["type": "failed", "error": error.localizedDescription]) }
+  func onAdClicked()           { onAdEvent?(["type": "clicked"]) }
+  func onImpression()          { onAdEvent?(["type": "impression"]) }
 }
