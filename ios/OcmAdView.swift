@@ -48,13 +48,11 @@ class OcmAdView: UIView, OcmBannerViewDelegate {
         }
     }
 
-    // ✅ Bridging NSString -> String (bez ?)
     DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak self] in
             guard let self = self else { return }
             print("🕑 Delayed load for adUnitId =", self.adUnitId)
             v.load(adUnitId: self.adUnitId as String, delegate: self)
         }
-//    v.load(adUnitId: adUnitId as String, delegate: self)
   }
 
   override func layoutSubviews() {

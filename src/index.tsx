@@ -37,22 +37,23 @@ export function initialize(publisherId: string) {
   return OcmNative.initialize(publisherId);
 }
 
-export function setConsent(
-  consent: Parameters<typeof OcmNative.setConsent>[0]
-) {
-  return OcmNative.setConsent(consent);
-}
-
-export function loadRewarded(
+export function loadBanner(
   adUnitId: string,
   extras: Record<string, string> = {}
 ) {
-  return OcmNative.loadRewarded(adUnitId, extras);
+  return OcmNative.loadBanner(adUnitId, extras);
 }
 
-export function showRewarded() {
-  return OcmNative.showRewarded();
-}
+// export function loadRewarded(
+//   adUnitId: string,
+//   extras: Record<string, string> = {}
+// ) {
+//   return OcmNative.loadRewarded(adUnitId, extras);
+// }
+
+// export function showRewarded() {
+//   return OcmNative.showRewarded();
+// }
 
 export type JSONValue =
   | string

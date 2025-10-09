@@ -1,5 +1,5 @@
 import type { TurboModule } from 'react-native';
-import { TurboModuleRegistry, NativeModules } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
 
 export type Consent = { gdprApplies?: boolean; tcfString?: string | null };
 
@@ -10,9 +10,7 @@ export type JSONValue =
 
 export interface Spec extends TurboModule {
   initialize(publisherId: string): Promise<void>;
-  setConsent(consent: Consent): void;
-  loadRewarded(adUnitId: string, extras?: StringMap): Promise<boolean>;
-  showRewarded(): Promise<void>;
+  loadBanner(adUnitId: string, extras?: StringMap): Promise<boolean>;
   track(event: string, payload?: { [key: string]: JSONValue }): void;
 }
 
