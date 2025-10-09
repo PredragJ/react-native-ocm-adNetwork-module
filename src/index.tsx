@@ -29,25 +29,25 @@
 
 export { default as OcmAdView } from './components/OcmAdViewNativeComponent';
 export type { OcmAdViewProps } from './components/OcmAdViewNativeComponent';
+export type { InterstitialConfig } from './NativeOcmAdnetworkModule';
 
 // Turbo/Native API
-import OcmNative from './NativeOcmAdnetworkModule';
+import OcmNative, { type InterstitialConfig } from './NativeOcmAdnetworkModule';
 
 export function initialize(publisherId: string) {
   return OcmNative.initialize(publisherId);
 }
 
-export function setConsent(
-  consent: Parameters<typeof OcmNative.setConsent>[0]
-) {
-  return OcmNative.setConsent(consent);
+export function loadInterstitial(config: InterstitialConfig) {
+  return OcmNative.loadInterstitial(config);
 }
 
-export function loadRewarded(
-  adUnitId: string,
-  extras: Record<string, string> = {}
-) {
-  return OcmNative.loadRewarded(adUnitId, extras);
+export function showInterstitial() {
+  return OcmNative.showInterstitial();
+}
+
+export function loadRewarded(adUnitId: string) {
+  return OcmNative.loadRewarded(adUnitId);
 }
 
 export function showRewarded() {

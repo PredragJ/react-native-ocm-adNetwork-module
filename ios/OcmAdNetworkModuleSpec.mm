@@ -9,8 +9,14 @@ RCT_EXTERN_METHOD(initialize:(NSString *)publisherId
 
 RCT_EXTERN_METHOD(setConsent:(NSDictionary *)consent)
 
+RCT_EXTERN_METHOD(loadInterstitial:(NSDictionary *)config
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(showInterstitial:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(loadRewarded:(NSString *)adUnitId
-                  extras:(NSDictionary *)extras
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
