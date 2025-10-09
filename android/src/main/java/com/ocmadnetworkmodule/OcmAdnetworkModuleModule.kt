@@ -34,10 +34,30 @@ class OcmAdnetworkModuleModule(
   }
 
   @ReactMethod
-  override fun loadRewarded(adUnitId: String, extras: ReadableMap?, promise: Promise) {
+  override fun loadInterstitial(config: ReadableMap, promise: Promise) {
     try {
-      // TODO: Rewarded.load(adUnitId, extras?.toHashMap()) { ... }
-      promise.resolve(null)
+      // TODO: Interstitial.load(config.toHashMap())
+      promise.resolve(false)
+    } catch (t: Throwable) {
+      promise.reject("LOAD_INTERSTITIAL_ERROR", t)
+    }
+  }
+
+  @ReactMethod
+  override fun showInterstitial(promise: Promise) {
+    try {
+      // TODO: Interstitial.show()
+      promise.resolve(false)
+    } catch (t: Throwable) {
+      promise.reject("SHOW_INTERSTITIAL_ERROR", t)
+    }
+  }
+
+  @ReactMethod
+  override fun loadRewarded(adUnitId: String, promise: Promise) {
+    try {
+      // TODO: Rewarded.load(adUnitId) { ... }
+      promise.resolve(false)
     } catch (t: Throwable) {
       promise.reject("LOAD_REWARDED_ERROR", t)
     }

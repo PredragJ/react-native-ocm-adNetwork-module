@@ -39,19 +39,25 @@ import {
 import {
   OcmAdView,
   initialize,
-  // ove ćemo povezati kad povežeš native:
-  // loadRewarded,
-  // showRewarded,
-  // track,
+  loadInterstitial,
+  showInterstitial,
+  loadRewarded,
+  showRewarded,
 } from 'react-native-ocm-adnetwork-module';
 
-const AD_UNIT_BANNER = 'ca-app-pub-3940256099942544/5224354917';
+const PREBID_CONFIG_AD_ID = '1001-sreq-test-300x250-imp-1';
+const AD_UNIT_BANNER = PREBID_CONFIG_AD_ID;
+const AD_UNIT_REWARDED = 'ca-app-pub-3940256099942544/5224354917';
+const GAM_INTERSTITIAL = '/75351959/testadunit/test_app_interstitial';
+const GAM_NATIVE = '/6499/example/native';
 
 export default function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [showBanner, setShowBanner] = useState(false);
+  const [showNative, setShowNative] = useState(false);
   // remount ključ da “resetuješ” view kada opet klikneš Load Banner
   const [bannerKey, setBannerKey] = useState(0);
+  const [nativeKey, setNativeKey] = useState(0);
 
   const addLog = useCallback((msg: string) => {
     setLogs((prev) => [`✅ ${msg}`, ...prev].slice(0, 200)); // drži max 200 logova
@@ -75,24 +81,48 @@ export default function App() {
 
   // ove trenutno samo loguju; kada budeš spreman, samo ubaci nativne pozive
   const onLoadRewarded = useCallback(async () => {
-    addLog('Load Rewarded pressed');
+    addLog('Loading Rewarded…');
+    try {
+      await loadRewarded(AD_UNIT_REWARDED);
+      addLog('Rewarded loaded');
+      await showRewarded();
+      addLog('Rewarded show requested');
+    } catch (err) {
+      addLog(`Rewarded error: ${String(err)}`);
+    }
   }, [addLog]);
 
-  const onLoadInterstitial = useCallback(() => {
-    addLog('Load Interstitial pressed');
+  const onLoadInterstitial = useCallback(async () => {
+    addLog('Loading Interstitial…');
+    try {
+      await loadInterstitial({
+        prebidConfigAdId: PREBID_CONFIG_AD_ID,
+        gamAdUnitId: GAM_INTERSTITIAL,
+      });
+      addLog('Interstitial loaded');
+      await showInterstitial();
+      addLog('Interstitial show requested');
+    } catch (err) {
+      addLog(`Interstitial error: ${String(err)}`);
+    }
   }, [addLog]);
 
   const onLoadNative = useCallback(() => {
-    addLog('Load Native pressed');
+    addLog('Mounting Native ad view…');
+    setShowNative(true);
+    setNativeKey((k) => k + 1);
   }, [addLog]);
 
-  const onBannerEvent = useCallback(
+  const onAdEvent = useCallback(
     (e: any) => {
       const { type, error } = e?.nativeEvent ?? {};
-      if (type === 'failed' && error) addLog(`Ad Failed: ${error}`);
-      else if (type)
-        addLog(`Ad ${type.charAt(0).toUpperCase() + type.slice(1)}`);
-      else addLog('Ad event');
+      if (type === 'failed' && error) {
+        addLog(`Ad Failed: ${error}`);
+      } else if (type) {
+        addLog(`Ad ${type}`);
+      } else {
+        addLog('Ad event');
+      }
     },
     [addLog]
   );
@@ -124,10 +154,28 @@ export default function App() {
             key={bannerKey}
             adUnitId={AD_UNIT_BANNER}
             format="banner"
+            onAdEvent={onAdEvent}
             style={s.banner}
           />
         ) : (
           <Text style={s.bannerPlaceholder}>Banner area</Text>
+        )}
+      </View>
+
+      <Text style={s.sectionTitle}>Native container:</Text>
+
+      <View style={s.nativeHost}>
+        {showNative ? (
+          <OcmAdView
+            key={nativeKey}
+            adUnitId={PREBID_CONFIG_AD_ID}
+            format="native"
+            gamAdUnitId={GAM_NATIVE}
+            onAdEvent={onAdEvent}
+            style={s.native}
+          />
+        ) : (
+          <Text style={s.bannerPlaceholder}>Native area</Text>
         )}
       </View>
     </SafeAreaView>
@@ -185,4 +233,16 @@ const s = StyleSheet.create({
   },
   banner: { width: '100%', height: '100%' },
   bannerPlaceholder: { color: '#999' },
+  nativeHost: {
+    flex: 1,
+    marginHorizontal: 20,
+    marginBottom: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  native: { width: '100%', height: '100%' },
 });

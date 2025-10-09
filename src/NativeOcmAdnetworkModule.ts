@@ -3,16 +3,27 @@ import { TurboModuleRegistry } from 'react-native';
 
 export type Consent = { gdprApplies?: boolean; tcfString?: string | null };
 
-export type StringMap = { [key: string]: string };
 export type JSONValue =
-  | string | number | boolean | null
-  | { [key: string]: JSONValue } | JSONValue[];
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JSONValue }
+  | JSONValue[];
+
+export type InterstitialConfig = {
+  prebidConfigAdId: string;
+  gamAdUnitId: string;
+};
 
 export interface Spec extends TurboModule {
   initialize(publisherId: string): Promise<void>;
-  loadBanner(adUnitId: string, extras?: StringMap): Promise<boolean>;
+  loadInterstitial(config: InterstitialConfig): Promise<boolean>;
+  showInterstitial(): Promise<boolean>;
+  loadRewarded(adUnitId: string): Promise<boolean>;
+  showRewarded(): Promise<boolean>;
   track(event: string, payload?: { [key: string]: JSONValue }): void;
 }
 
 const mod = TurboModuleRegistry.get<Spec>('OcmAdNetworkModule');
-export default (mod as unknown) as Spec;
+export default mod as unknown as Spec;
