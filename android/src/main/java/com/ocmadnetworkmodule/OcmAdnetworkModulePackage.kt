@@ -5,16 +5,21 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.facebook.react.uimanager.ViewManager
 import java.util.HashMap
 
 class OcmAdnetworkModulePackage : BaseReactPackage() {
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-    return if (name == OcmAdnetworkModuleModule.NAME) {
-      OcmAdnetworkModuleModule(reactContext)
-    } else {
-      null
+    return when (name) {
+      OcmAdnetworkModuleModule.NAME -> OcmAdnetworkModuleModule(reactContext)
+      OcmAdViewManagerModule.NAME -> OcmAdViewManagerModule(reactContext)
+      else -> null
     }
   }
+ 
+  override fun createViewManagers(
+    reactContext: ReactApplicationContext
+  ): MutableList<ViewManager<*, *>> = mutableListOf(OcmAdViewManager())
 
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
     return ReactModuleInfoProvider {
@@ -26,6 +31,14 @@ class OcmAdnetworkModulePackage : BaseReactPackage() {
         false,  // needsEagerInit
         false,  // isCxxModule
         true // isTurboModule
+      )
+      moduleInfos[OcmAdViewManagerModule.NAME] = ReactModuleInfo(
+        OcmAdViewManagerModule.NAME,
+        OcmAdViewManagerModule.NAME,
+        false,
+        false,
+        false,
+        false
       )
       moduleInfos
     }
