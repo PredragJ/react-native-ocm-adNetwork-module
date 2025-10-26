@@ -10235,11 +10235,12 @@ __metadata:
     react-native: 0.81.0
     react-native-builder-bob: ^0.40.13
     react-native-monorepo-config: ^0.1.9
+    react-native-ocm-adnetwork-module: "workspace:*"
     react-native-safe-area-context: ^5.5.2
   languageName: unknown
   linkType: soft
 
-"react-native-ocm-adnetwork-module@workspace:.":
+"react-native-ocm-adnetwork-module@workspace:*, react-native-ocm-adnetwork-module@workspace:.":
   version: 0.0.0-use.local
   resolution: "react-native-ocm-adnetwork-module@workspace:."
   dependencies:
