@@ -7,6 +7,11 @@ RCT_EXTERN_METHOD(initialize:(NSString *)publisherId
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(initializeWithConfig:(NSDictionary *)config
+                  prebidAccountId:(NSString *)prebidAccountId
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(setConsent:(NSDictionary *)consent)
 
 RCT_EXTERN_METHOD(loadInterstitial:(NSDictionary *)config

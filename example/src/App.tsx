@@ -9,18 +9,41 @@ import {
 } from 'react-native';
 import {
   OcmAdView,
-  initialize,
+  initializeWithConfig,
   loadInterstitial,
   showInterstitial,
   loadRewarded,
   showRewarded,
+  type LocalConfig,
 } from 'react-native-ocm-adnetwork-module';
 
-const PREBID_CONFIG_AD_ID = '1001-sreq-test-300x250-imp-1';
-const AD_UNIT_BANNER = PREBID_CONFIG_AD_ID;
+const IS_GDPR_USER = true;
+
+const LOCAL_CONFIG: LocalConfig = {
+  adUnit: {
+    id: 'sdna-android-banner-sticky-multi',
+    format: 'banner',
+    size: '300x250',
+    position: 'bottom',
+    refresh: 30,
+  },
+  gam: {
+    networkCode: '75351959',
+    adUnitPath: '/86799355/sdna.gr/instream',
+  },
+  privacyFromSdk: {
+    gdpr: IS_GDPR_USER ? 1 : 0,
+    ccpa: '',
+    coppa: 0,
+  },
+};
+
+const BANNER_CONFIG_ID = '20086-sdna-android-banner-inline1-300x250';
+const INTERSTITIAL_CONFIG_ID = '20086-sdna-android-interstitial-multi';
+const NATIVE_CONFIG_ID = '1001-sreq-test-300x250-imp-1';
 const AD_UNIT_REWARDED = 'ca-app-pub-3940256099942544/5224354917';
-const GAM_INTERSTITIAL = '/75351959/testadunit/test_app_interstitial';
-const GAM_NATIVE = '/6499/example/native';
+const GAM_INTERSTITIAL = '/86799355/sdna.gr/instream';
+const GAM_NATIVE = '/75351959/testadunit/test_native';
 
 export default function App() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -35,8 +58,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    initialize('test_pub_001')
-      .then(() => addLog('SDK initialized'))
+    initializeWithConfig(LOCAL_CONFIG, 'sdna_android_banner_sticky_multi')
+      .then(() => addLog('SDK initialized with local config'))
       .catch((err) => {
         console.warn('Init failed', err);
         setLogs((prev) => [`❌ Init failed: ${String(err)}`, ...prev]);
@@ -67,7 +90,7 @@ export default function App() {
     addLog('Loading Interstitial…');
     try {
       await loadInterstitial({
-        prebidConfigAdId: PREBID_CONFIG_AD_ID,
+        prebidConfigAdId: INTERSTITIAL_CONFIG_ID,
         gamAdUnitId: GAM_INTERSTITIAL,
       });
       addLog('Interstitial loaded');
@@ -123,7 +146,7 @@ export default function App() {
         {showBanner ? (
           <OcmAdView
             key={bannerKey}
-            adUnitId={AD_UNIT_BANNER}
+            adUnitId={BANNER_CONFIG_ID}
             format="banner"
             onAdEvent={onAdEvent}
             style={s.banner}
@@ -139,7 +162,7 @@ export default function App() {
         {showNative ? (
           <OcmAdView
             key={nativeKey}
-            adUnitId={PREBID_CONFIG_AD_ID}
+            adUnitId={NATIVE_CONFIG_ID}
             format="native"
             gamAdUnitId={GAM_NATIVE}
             onAdEvent={onAdEvent}

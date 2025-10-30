@@ -11,6 +11,25 @@ export type JSONValue =
   | { [key: string]: JSONValue }
   | JSONValue[];
 
+export type LocalConfig = {
+  adUnit: {
+    id: string;
+    format: string;
+    size: string;
+    position?: string;
+    refresh?: number;
+  };
+  gam?: {
+    networkCode: string;
+    adUnitPath: string;
+  };
+  privacyFromSdk?: {
+    gdpr?: number;
+    ccpa?: string;
+    coppa?: number;
+  };
+};
+
 export type InterstitialConfig = {
   prebidConfigAdId: string;
   gamAdUnitId: string;
@@ -18,6 +37,10 @@ export type InterstitialConfig = {
 
 export interface Spec extends TurboModule {
   initialize(publisherId: string): Promise<void>;
+  initializeWithConfig(
+    config: LocalConfig,
+    prebidAccountId?: string | null
+  ): Promise<void>;
   loadInterstitial(config: InterstitialConfig): Promise<boolean>;
   showInterstitial(): Promise<boolean>;
   loadRewarded(adUnitId: string): Promise<boolean>;
@@ -48,7 +71,8 @@ const legacyModule =
   (NativeModules.OcmAdNetworkModuleModule as Spec | undefined) ??
   (NativeModules.OcmAdnetworkModuleModule as Spec | undefined);
 
-export default moduleProxy ?? legacyModule ??
+export default moduleProxy ??
+  legacyModule ??
   (new Proxy(
     {},
     {
