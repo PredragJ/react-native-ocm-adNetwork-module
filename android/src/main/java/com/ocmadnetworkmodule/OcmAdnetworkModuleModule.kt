@@ -8,12 +8,16 @@ import com.ocmadnetworkmodule.NativeOcmAdnetworkModuleSpec
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.ReadableType
 import com.orangeclickmedia.adnetwork.OcmAdNetworkSDK
+import com.orangeclickmedia.adnetwork.config.OcmConfig
+import com.orangeclickmedia.adnetwork.config.OcmConfigBuilder
 import com.orangeclickmedia.adnetwork.interstitial.OcmInterstitialListener
 import com.orangeclickmedia.adnetwork.interstitial.OcmInterstitialLoader
 import com.orangeclickmedia.adnetwork.rewarded.OcmRewardedListener
 import com.orangeclickmedia.adnetwork.rewarded.OcmRewardedLoader
 import com.orangeclickmedia.adnetwork.analytics.model.RewardedResult
+import org.json.JSONObject
 
 class OcmAdnetworkModuleModule(
   reactContext: ReactApplicationContext
@@ -26,6 +30,7 @@ class OcmAdnetworkModuleModule(
   private val mainHandler = Handler(Looper.getMainLooper())
 
   private var initializedPublisherId: String? = null
+  private var initializedConfigSignature: String? = null
   private var interstitialLoader: OcmInterstitialLoader? = null
   private var interstitialLoadPromise: Promise? = null
   private var interstitialReady = false
@@ -53,6 +58,45 @@ class OcmAdnetworkModuleModule(
         result
           .onSuccess {
             initializedPublisherId = publisherId
+            initializedConfigSignature = null
+            promise.resolve(null)
+          }
+          .onFailure { error ->
+            promise.reject("ocm_init_failed", error)
+          }
+      }
+    }
+  }
+
+  override fun initializeWithConfig(
+    config: ReadableMap,
+    prebidAccountId: String?,
+    promise: Promise
+  ) {
+    val signature = computeConfigSignature(config)
+    if (signature != null && signature == initializedConfigSignature) {
+      promise.resolve(null)
+      return
+    }
+
+    val localConfig = try {
+      buildLocalConfig(config)
+    } catch (error: IllegalArgumentException) {
+      promise.reject("ocm_init_invalid_config", error)
+      return
+    }
+
+    val context = reactApplicationContext
+    mainHandler.post {
+      OcmAdNetworkSDK.initializeWithConfig(
+        context = context,
+        config = localConfig,
+        prebidAccountId = prebidAccountId
+      ) { result ->
+        result
+          .onSuccess {
+            initializedPublisherId = null
+            initializedConfigSignature = signature
             promise.resolve(null)
           }
           .onFailure { error ->
@@ -271,4 +315,65 @@ class OcmAdnetworkModuleModule(
   }
 
   // endregion
+
+  private fun buildLocalConfig(config: ReadableMap): OcmConfig {
+    val adUnitMap = config.getMapOrNull("adUnit")
+      ?: throw IllegalArgumentException("Missing `adUnit` configuration block")
+
+    val adUnitId = adUnitMap.getStringOrNull("id")?.takeIf { it.isNotBlank() }
+      ?: throw IllegalArgumentException("Missing `adUnit.id`")
+    val adUnitFormat = adUnitMap.getStringOrNull("format")?.takeIf { it.isNotBlank() }
+      ?: throw IllegalArgumentException("Missing `adUnit.format`")
+    val adUnitSize = adUnitMap.getStringOrNull("size")?.takeIf { it.isNotBlank() }
+      ?: throw IllegalArgumentException("Missing `adUnit.size`")
+
+    val builder = OcmConfigBuilder()
+      .adUnit(
+        id = adUnitId,
+        format = adUnitFormat,
+        size = adUnitSize,
+        position = adUnitMap.getStringOrNull("position")?.takeIf { it.isNotBlank() },
+        refresh = adUnitMap.getIntLike("refresh")
+      )
+
+    config.getMapOrNull("gam")?.let { gamMap ->
+      val networkCode = gamMap.getStringOrNull("networkCode")?.takeIf { it.isNotBlank() }
+        ?: throw IllegalArgumentException("Missing `gam.networkCode`")
+      val adUnitPath = gamMap.getStringOrNull("adUnitPath")?.takeIf { it.isNotBlank() }
+        ?: throw IllegalArgumentException("Missing `gam.adUnitPath`")
+      builder.gam(networkCode = networkCode, adUnitPath = adUnitPath)
+    }
+
+    config.getMapOrNull("privacyFromSdk")?.let { privacyMap ->
+      val gdpr = privacyMap.getIntLike("gdpr") ?: 0
+      val ccpa = privacyMap.getStringOrNull("ccpa") ?: ""
+      val coppa = privacyMap.getIntLike("coppa") ?: 0
+      builder.privacyFromSdk(gdpr = gdpr, ccpa = ccpa, coppa = coppa)
+    }
+
+    return builder.build()
+  }
+
+  private fun computeConfigSignature(config: ReadableMap): String? =
+    try {
+      JSONObject(config.toHashMap()).toString()
+    } catch (_: Exception) {
+      null
+    }
+
+  private fun ReadableMap.getMapOrNull(key: String): ReadableMap? =
+    if (hasKey(key) && !isNull(key)) getMap(key) else null
+
+  private fun ReadableMap.getStringOrNull(key: String): String? =
+    if (hasKey(key) && !isNull(key)) getString(key) else null
+
+  private fun ReadableMap.getIntLike(key: String): Int? {
+    if (!hasKey(key) || isNull(key)) return null
+    return when (getType(key)) {
+      ReadableType.Boolean -> if (getBoolean(key)) 1 else 0
+      ReadableType.Number -> getDouble(key).toInt()
+      ReadableType.String -> getString(key)?.toIntOrNull()
+      else -> null
+    }
+  }
 }

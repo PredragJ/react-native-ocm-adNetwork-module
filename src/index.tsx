@@ -1,12 +1,25 @@
 export { default as OcmAdView } from './components/OcmAdViewNativeView';
 export type { OcmAdViewProps } from './components/OcmAdViewNativeView';
-export type { InterstitialConfig } from './NativeOcmAdnetworkModule';
+export type {
+  InterstitialConfig,
+  LocalConfig,
+} from './NativeOcmAdnetworkModule';
 
 // Turbo/Native API
-import OcmNative, { type InterstitialConfig } from './NativeOcmAdnetworkModule';
+import OcmNative, {
+  type InterstitialConfig,
+  type LocalConfig,
+} from './NativeOcmAdnetworkModule';
 
 export function initialize(publisherId: string) {
   return OcmNative.initialize(publisherId);
+}
+
+export function initializeWithConfig(
+  config: LocalConfig,
+  prebidAccountId?: string
+) {
+  return OcmNative.initializeWithConfig(config, prebidAccountId ?? null);
 }
 
 export function loadInterstitial(config: InterstitialConfig) {

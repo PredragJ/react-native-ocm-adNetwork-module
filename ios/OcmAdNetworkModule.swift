@@ -9,6 +9,7 @@ typealias PromiseTuple = (resolve: RCTPromiseResolveBlock, reject: RCTPromiseRej
 class OcmAdNetworkModule: NSObject {
 
   private static var initializedPublisherId: String?
+  private static var initializedConfigFingerprint: String?
 
   private var interstitialLoader: OcmInterstitialLoader?
   private var interstitialLoadPromise: PromiseTuple?
@@ -32,7 +33,52 @@ class OcmAdNetworkModule: NSObject {
       do {
         try await OcmAdNetworkSDK.initialize(publisherId: publisher)
         Self.initializedPublisherId = publisher
+        Self.initializedConfigFingerprint = nil
         resolve(nil)
+      } catch {
+        let nsError = error as NSError
+        reject("ocm_init_failed", nsError.localizedDescription, nsError)
+      }
+    }
+  }
+
+  @objc func initializeWithConfig(_ config: NSDictionary,
+                                  prebidAccountId: NSString?,
+                                  resolve: @escaping RCTPromiseResolveBlock,
+                                  reject: @escaping RCTPromiseRejectBlock) {
+    let fingerprint = Self.configFingerprint(for: config)
+
+    if
+      let existing = Self.initializedConfigFingerprint,
+      let fingerprint,
+      existing == fingerprint
+    {
+      resolve(nil)
+      return
+    }
+
+    Task {
+      do {
+        let localConfig = try Self.makeLocalConfig(from: config)
+        let prebid = (prebidAccountId as String?)?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let prebid, !prebid.isEmpty {
+          try await OcmAdNetworkSDK.initialize(with: localConfig, prebidAccountId: prebid)
+        } else {
+          try await OcmAdNetworkSDK.initialize(with: localConfig)
+        }
+
+        Self.initializedPublisherId = nil
+        Self.initializedConfigFingerprint = fingerprint
+        resolve(nil)
+      } catch let parsingError as ConfigParsingError {
+        let description = parsingError.localizedDescription
+        let error = NSError(
+          domain: "ocm_init_invalid_config",
+          code: parsingError.code,
+          userInfo: [NSLocalizedDescriptionKey: description]
+        )
+        reject("ocm_init_invalid_config", description, error)
       } catch {
         let nsError = error as NSError
         reject("ocm_init_failed", nsError.localizedDescription, nsError)
@@ -177,6 +223,131 @@ class OcmAdNetworkModule: NSObject {
       let errorMessage = message ?? "Unknown error"
       promise.reject("ocm_rewarded_load_failed", "[\(code)] \(errorMessage)", nil)
     }
+  }
+}
+
+private extension OcmAdNetworkModule {
+  enum ConfigParsingError: LocalizedError {
+    case missingBlock(String)
+    case missingField(String)
+
+    var errorDescription: String? {
+      switch self {
+      case let .missingBlock(name):
+        return "Missing `\(name)` configuration block"
+      case let .missingField(path):
+        return "Missing required field `\(path)`"
+      }
+    }
+
+    var code: Int {
+      switch self {
+      case .missingBlock:
+        return 1
+      case .missingField:
+        return 2
+      }
+    }
+  }
+
+  static func makeLocalConfig(from dictionary: NSDictionary) throws -> OcmConfig {
+    guard
+      let adUnitAny = dictionary["adUnit"],
+      !(adUnitAny is NSNull),
+      let adUnit = adUnitAny as? [String: Any]
+    else {
+      throw ConfigParsingError.missingBlock("adUnit")
+    }
+
+    guard
+      let adUnitId = (adUnit["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !adUnitId.isEmpty
+    else {
+      throw ConfigParsingError.missingField("adUnit.id")
+    }
+
+    guard
+      let adUnitFormat = (adUnit["format"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !adUnitFormat.isEmpty
+    else {
+      throw ConfigParsingError.missingField("adUnit.format")
+    }
+
+    guard
+      let adUnitSize = (adUnit["size"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      !adUnitSize.isEmpty
+    else {
+      throw ConfigParsingError.missingField("adUnit.size")
+    }
+
+    let builder = OcmConfigBuilder()
+    builder.adUnit(
+      id: adUnitId,
+      format: adUnitFormat,
+      size: adUnitSize,
+      position: (adUnit["position"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      refresh: intValue(from: adUnit["refresh"])
+    )
+
+    if
+      let gamAny = dictionary["gam"],
+      !(gamAny is NSNull),
+      let gam = gamAny as? [String: Any]
+    {
+      guard
+        let networkCode = (gam["networkCode"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+        !networkCode.isEmpty
+      else {
+        throw ConfigParsingError.missingField("gam.networkCode")
+      }
+
+      guard
+        let adUnitPath = (gam["adUnitPath"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+        !adUnitPath.isEmpty
+      else {
+        throw ConfigParsingError.missingField("gam.adUnitPath")
+      }
+
+      builder.gam(networkCode: networkCode, adUnitPath: adUnitPath)
+    }
+
+    if
+      let privacyAny = dictionary["privacyFromSdk"],
+      !(privacyAny is NSNull),
+      let privacy = privacyAny as? [String: Any]
+    {
+      let gdpr = intValue(from: privacy["gdpr"]) ?? 0
+      let ccpa = (privacy["ccpa"] as? String) ?? ""
+      let coppa = intValue(from: privacy["coppa"]) ?? 0
+
+      builder.privacyFromSdk(gdpr: gdpr, ccpa: ccpa, coppa: coppa)
+    }
+
+    return builder.build()
+  }
+
+  static func intValue(from value: Any?) -> Int? {
+    switch value {
+    case let number as NSNumber:
+      return number.intValue
+    case let string as NSString:
+      return string.integerValue
+    case let bool as Bool:
+      return bool ? 1 : 0
+    default:
+      return nil
+    }
+  }
+
+  static func configFingerprint(for dictionary: NSDictionary) -> String? {
+    guard JSONSerialization.isValidJSONObject(dictionary) else { return nil }
+    guard
+      let data = try? JSONSerialization.data(withJSONObject: dictionary, options: [.sortedKeys]),
+      let string = String(data: data, encoding: .utf8)
+    else {
+      return nil
+    }
+    return string
   }
 }
 
