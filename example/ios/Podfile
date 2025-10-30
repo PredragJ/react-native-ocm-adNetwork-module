@@ -10,10 +10,7 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-pod 'OCMAdNetworkIOS', :podspec => '/Users/predragjevtic/Desktop/OCMAdNetworkIOS.podspec'
-pod 'Google-Mobile-Ads-SDK'
-pod 'GoogleUserMessagingPlatform'
-pod 'PrebidMobile'
+pod 'OCMAdNetworkIOS', '~> 1.1.1'
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
