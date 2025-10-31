@@ -1,12 +1,12 @@
 {
   "name": "react-native-ocm-adnetwork-module",
   "version": "0.1.0",
-  "description": "This example demonstrates the `react-native-ocm-ad-network-module` in a simpleReact Native application. On launch the OCM SDK is initialized, a banner ad ismounted in the view hierarchy, and buttons are provided to load and showinterstitial and rewarded ads. Events emitted by the SDK are displayed onscreen for easy debugging.",
+  "description": "React Native bridge for the Orange Click Media AdNetwork SDK (banner, interstitial and rewarded formats).",
   "main": "lib/commonjs/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "module": "lib/module/index.js",
   "source": "./src/index.tsx",
-  "react-native": "src/index.ts",
+  "react-native": "./lib/module/index.js",
   "exports": {
     ".": {
       "source": "./src/index.tsx",
@@ -23,9 +23,6 @@
     "cpp",
     "*.podspec",
     "react-native.config.js",
-    "!src/components/*.js",
-    "!src/components/*.jsx",
-    "!src/components/*.tsx",
     "!ios/build",
     "!android/build",
     "!android/gradle",
