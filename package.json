@@ -1,7 +1,7 @@
 {
   "name": "react-native-ocm-adnetwork-module",
-  "version": "0.1.0",
-  "description": "React Native bridge for the Orange Click Media AdNetwork SDK (banner, interstitial and rewarded formats).",
+  "version": "1.0.0",
+  "description": "React Native bridge for the Orange Click Media AdNetwork SDK (banner, interstitial and rewarded formats (NativeAd Beta).",
   "main": "lib/commonjs/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "module": "lib/module/index.js",
@@ -59,6 +59,7 @@
   },
   "homepage": "https://github.com/PredragJ/react-native-ocm-adnetwork-module#readme",
   "publishConfig": {
+        "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
