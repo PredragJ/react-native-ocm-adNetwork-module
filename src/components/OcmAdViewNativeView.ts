@@ -30,12 +30,14 @@ const LINKING_ERROR =
   }) +
   '- if you are using Expo, remove the expo package and eject the application.\n';
 
+const createUnlinkedComponent = () => {
+  throw new Error(LINKING_ERROR);
+};
+
 const NativeOcmAdView: HostComponent<OcmAdViewNativeProps> =
   UIManager.getViewManagerConfig(COMPONENT_NAME) != null
     ? requireNativeComponent<OcmAdViewNativeProps>(COMPONENT_NAME)
-    : (() => {
-        throw new Error(LINKING_ERROR);
-      }) as unknown as HostComponent<OcmAdViewNativeProps>;
+    : (createUnlinkedComponent as unknown as HostComponent<OcmAdViewNativeProps>);
 
 type NativeOcmAdViewRef = ElementRef<typeof NativeOcmAdView>;
 
@@ -44,9 +46,11 @@ type OcmAdEvent = {
   error?: string;
 };
 
+export type BannerFormat = 'banner' | 'native';
+
 type OcmAdViewNativeProps = ViewProps & {
-  adUnitId: string;
-  format?: 'banner' | 'native';
+  adUnitId?: string;
+  format?: BannerFormat;
   refreshInterval?: number;
   onAdEvent?: (event: NativeSyntheticEvent<OcmAdEvent>) => void;
   prebidConfigAdId?: string;
@@ -76,9 +80,11 @@ const OcmAdView = forwardRef<OcmAdViewHandle, OcmAdViewProps>((props, ref) => {
     },
   }));
 
+  const { format = 'banner', ...restProps } = props;
+
   return React.createElement(NativeOcmAdView, {
-    format: 'banner',
-    ...props,
+    ...restProps,
+    format,
     ref: nativeRef,
   });
 });

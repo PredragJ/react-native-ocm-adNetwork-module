@@ -48,12 +48,13 @@ const legacyModule =
   (NativeModules.OcmAdNetworkModuleModule as Spec | undefined) ??
   (NativeModules.OcmAdnetworkModuleModule as Spec | undefined);
 
-export default moduleProxy ?? legacyModule ??
-  (new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(LINKING_ERROR);
-      },
-    }
-  ) as Spec);
+const fallbackModule = new Proxy(
+  {},
+  {
+    get() {
+      throw new Error(LINKING_ERROR);
+    },
+  }
+) as Spec;
+
+export default moduleProxy ?? legacyModule ?? fallbackModule;

@@ -1,5 +1,9 @@
-export { default as OcmAdView } from './components/OcmAdViewNativeView';
-export type { OcmAdViewProps } from './components/OcmAdViewNativeView';
+export {
+  default as OcmAdView,
+  type OcmAdViewHandle,
+  type OcmAdViewProps,
+  type BannerFormat,
+} from './components/OcmAdViewNativeView';
 export type { InterstitialConfig } from './NativeOcmAdnetworkModule';
 
 // Turbo/Native API

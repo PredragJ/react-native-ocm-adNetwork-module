@@ -1,6 +1,8 @@
 package com.ocmadnetworkmodule
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.widget.FrameLayout
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactContext
@@ -10,8 +12,10 @@ import com.orangeclickmedia.adnetwork.banner.OcmBannerView
 
 class OcmAdView(context: Context) : FrameLayout(context), BannerListener {
 
+  private val mainHandler = Handler(Looper.getMainLooper())
   private var bannerView: OcmBannerView? = null
   private var isLoading = false
+  private var refreshRunnable: Runnable? = null
 
   var adUnitId: String? = null
     set(value) {
@@ -29,16 +33,30 @@ class OcmAdView(context: Context) : FrameLayout(context), BannerListener {
     }
 
   var refreshInterval: Int? = null
+    set(value) {
+      field = value
+      if (value == null || value <= 0) {
+        cancelScheduledRefresh()
+      } else if (!isLoading) {
+        scheduleRefresh()
+      }
+    }
   var prebidConfigAdId: String? = null
   var gamAdUnitId: String? = null
 
   fun triggerLoad() {
+    cancelScheduledRefresh()
     scheduleLoad(force = true)
   }
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     scheduleLoad()
+  }
+
+  override fun onDetachedFromWindow() {
+    super.onDetachedFromWindow()
+    cancelScheduledRefresh()
   }
 
   private fun scheduleLoad(force: Boolean = false) {
@@ -52,12 +70,14 @@ class OcmAdView(context: Context) : FrameLayout(context), BannerListener {
 
   private fun performLoad() {
     if (isNativeFormat()) {
+      isLoading = false
       emit("failed", "Native format is not yet available on Android")
       return
     }
 
     val configId = prebidConfigAdId ?: adUnitId
     if (configId.isNullOrBlank()) {
+      isLoading = false
       emit("failed", "Missing `adUnitId` for banner format")
       return
     }
@@ -71,6 +91,7 @@ class OcmAdView(context: Context) : FrameLayout(context), BannerListener {
     removeAllViews()
     bannerView?.let { addView(it) }
 
+    cancelScheduledRefresh()
     isLoading = true
     bannerView?.load(configId, this)
   }
@@ -93,11 +114,13 @@ class OcmAdView(context: Context) : FrameLayout(context), BannerListener {
   override fun onAdLoaded() {
     isLoading = false
     emit("loaded")
+    scheduleRefresh()
   }
 
   override fun onAdFailed(error: Throwable) {
     isLoading = false
     emit("failed", error.localizedMessage ?: "Unknown error")
+    cancelScheduledRefresh()
   }
 
   override fun onAdClicked() {
@@ -106,6 +129,32 @@ class OcmAdView(context: Context) : FrameLayout(context), BannerListener {
 
   override fun onImpression() {
     emit("impression")
+  }
+
+  private fun scheduleRefresh() {
+    val intervalSeconds = refreshInterval
+    if (intervalSeconds == null || intervalSeconds <= 0) {
+      return
+    }
+    if (windowToken == null) {
+      return
+    }
+
+    val runnable = Runnable {
+      refreshRunnable = null
+      if (windowToken != null) {
+        scheduleLoad(force = true)
+      }
+    }
+
+    refreshRunnable = runnable
+    mainHandler.postDelayed(runnable, intervalSeconds * 1000L)
+  }
+
+  private fun cancelScheduledRefresh() {
+    val runnable = refreshRunnable ?: return
+    mainHandler.removeCallbacks(runnable)
+    refreshRunnable = null
   }
 
   companion object {
